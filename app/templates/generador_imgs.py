@@ -86,6 +86,7 @@ async def renderizar_frente(data : dict) -> QImage:
         tipo = data["tipo_usuario"]
         distintivos = buscar_categoria(ajustes, tipo)
         if distintivos is None:
+            statusBar.mostrar_error("No se encontro al tipo de usuario verificar la configuracion.")
             return None
         texto = str(ajustes.value("frontal/num_leyenda/texto")).replace("{tipo}",distintivos["tipo"])
         leyenda_fuente = ajustes.value("frontal/num_leyenda/fuente")
