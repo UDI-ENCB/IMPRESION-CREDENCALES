@@ -44,131 +44,135 @@ async def renderizar_frente(data : dict) -> QImage:
         statusBar.mostrar_error("No se encontro la plantilla frontal")
 
     # Creando painter para cargar imagen
-    p = QPainter(imagen)
-    p.setRenderHints(QPainter.Antialiasing | QPainter.SmoothPixmapTransform | QPainter.TextAntialiasing)
+    try:
+        p = QPainter(imagen)
+        p.setRenderHints(QPainter.Antialiasing | QPainter.SmoothPixmapTransform | QPainter.TextAntialiasing)
 
-    # Pintando plantilla frontal
-    p.drawImage(imagen.rect(), QImage(ruta_front))
+        # Pintando plantilla frontal
+        p.drawImage(imagen.rect(), QImage(ruta_front))
 
-    #Cargar fotografia de usuario
+        #Cargar fotografia de usuario
 
-    x = int(ajustes.value("frontal/foto/x"))
-    y = int(ajustes.value("frontal/foto/y"))
-    w = int(ajustes.value("frontal/foto/w"))
-    h = int(ajustes.value("frontal/foto/h"))
-    caja_foto = QRectF(x,y,w,h)
-    foto = await descargar_foto(data["id"])
-    if not isinstance(foto, QImage):
-        foto = QImage(w,h,QImage.Format_ARGB32)
-        foto.fill(Qt.gray)
-    foto = foto.scaled(caja_foto.size().toSize(), Qt.KeepAspectRatio,Qt.SmoothTransformation)
-    p.drawImage(caja_foto.topLeft(),foto)
+        x = int(ajustes.value("frontal/foto/x"))
+        y = int(ajustes.value("frontal/foto/y"))
+        w = int(ajustes.value("frontal/foto/w"))
+        h = int(ajustes.value("frontal/foto/h"))
+        caja_foto = QRectF(x,y,w,h)
+        foto = await descargar_foto(data["id"])
+        if not isinstance(foto, QImage):
+            foto = QImage(w,h,QImage.Format_ARGB32)
+            foto.fill(Qt.gray)
+        foto = foto.scaled(caja_foto.size().toSize(), Qt.KeepAspectRatio,Qt.SmoothTransformation)
+        p.drawImage(caja_foto.topLeft(),foto)
 
-    #Pintamos nombre del usuario
+        #Pintamos nombre del usuario
 
-    nombre = data["nombre_completo"]
-    nombre_fuente = ajustes.value("frontal/nombre/fuente")
-    tamanio_nombre = int(ajustes.value("frontal/nombre/tam"))
-    color_nombre = ajustes.value("frontal/nombre/color")
-    x_nombre = int(ajustes.value("frontal/nombre/x"))
-    y_nombre = int(ajustes.value("frontal/nombre/y"))
-    w_nombre = int(ajustes.value("frontal/nombre/w"))
-    h_nombre = int(ajustes.value("frontal/nombre/h"))
-    bold_nombre = ajustes.value("frontal/nombre/negrita")
-    if not isinstance(bold_nombre, bool):
-        bold_nombre = str(bold_nombre).lower() == "true"
+        nombre = data["nombre_completo"]
+        nombre_fuente = ajustes.value("frontal/nombre/fuente")
+        tamanio_nombre = int(ajustes.value("frontal/nombre/tam"))
+        color_nombre = ajustes.value("frontal/nombre/color")
+        x_nombre = int(ajustes.value("frontal/nombre/x"))
+        y_nombre = int(ajustes.value("frontal/nombre/y"))
+        w_nombre = int(ajustes.value("frontal/nombre/w"))
+        h_nombre = int(ajustes.value("frontal/nombre/h"))
+        bold_nombre = ajustes.value("frontal/nombre/negrita")
+        if not isinstance(bold_nombre, bool):
+            bold_nombre = str(bold_nombre).lower() == "true"
 
-    pintar_texto(p, nombre, nombre_fuente, color_nombre, tamanio_nombre, (x_nombre,y_nombre,w_nombre,h_nombre), bold_nombre)
+        pintar_texto(p, nombre, nombre_fuente, color_nombre, tamanio_nombre, (x_nombre,y_nombre,w_nombre,h_nombre), bold_nombre)
 
-    # Pintamos Numero de {tipo}
-    
-    tipo = data["tipo_usuario"]
-    distintivos = buscar_categoria(ajustes, tipo)
-    if distintivos is None:
-        return None
-    texto = str(ajustes.value("frontal/num_leyenda/texto")).replace("{tipo}",distintivos["tipo"])
-    leyenda_fuente = ajustes.value("frontal/num_leyenda/fuente")
-    tamanio_num_leyenda = ajustes.value("frontal/num_leyenda/tam")
-    color_leyenda = ajustes.value("frontal/num_leyenda/color")
-    x_num_leyenda = int(ajustes.value("frontal/num_leyenda/x"))
-    y_num_leyenda = int(ajustes.value("frontal/num_leyenda/y"))
-    w_num_leyenda = int(ajustes.value("frontal/num_leyenda/w"))
-    h_num_leyenda = int(ajustes.value("frontal/num_leyenda/h"))
+        # Pintamos Numero de {tipo}
+        
+        tipo = data["tipo_usuario"]
+        distintivos = buscar_categoria(ajustes, tipo)
+        if distintivos is None:
+            return None
+        texto = str(ajustes.value("frontal/num_leyenda/texto")).replace("{tipo}",distintivos["tipo"])
+        leyenda_fuente = ajustes.value("frontal/num_leyenda/fuente")
+        tamanio_num_leyenda = ajustes.value("frontal/num_leyenda/tam")
+        color_leyenda = ajustes.value("frontal/num_leyenda/color")
+        x_num_leyenda = int(ajustes.value("frontal/num_leyenda/x"))
+        y_num_leyenda = int(ajustes.value("frontal/num_leyenda/y"))
+        w_num_leyenda = int(ajustes.value("frontal/num_leyenda/w"))
+        h_num_leyenda = int(ajustes.value("frontal/num_leyenda/h"))
 
-    bold_leyenda = ajustes.value("frontal/num_leyenda/negrita")
-    if not isinstance(bold_leyenda, bool):
-        bold_leyenda = str(bold_leyenda).lower() == "true"
-    pintar_texto(p,texto,leyenda_fuente,color_leyenda,tamanio_num_leyenda,(x_num_leyenda,y_num_leyenda,w_num_leyenda,h_num_leyenda),bold_leyenda)
-
-
-    #Pintamos el numero_usuario
-
-    numero_usuario = data["numero_usuario"]
-    nombre_fuente = ajustes.value("frontal/num_valor/fuente")
-    tamanio_nombre = int(ajustes.value("frontal/num_valor/tam"))
-    color_nombre = ajustes.value("frontal/num_valor/color")
-    x_nombre = int(ajustes.value("frontal/num_valor/x"))
-    y_nombre = int(ajustes.value("frontal/num_valor/y"))
-    w_nombre = int(ajustes.value("frontal/num_valor/w"))
-    h_nombre = int(ajustes.value("frontal/num_valor/h"))
-    bold_nombre = ajustes.value("frontal/num_valor/negrita")
-    if not isinstance(bold_nombre, bool):
-        bold_nombre = str(bold_nombre).lower() == "true"
-    pintar_texto(p, numero_usuario, nombre_fuente, color_nombre, tamanio_nombre, (x_nombre,y_nombre,w_nombre,h_nombre), bold_nombre)
-
-    # Puntamos la leyenda de adcripcion
-    texto_adscripcion = distintivos["adscripcion"]
-    leyenda_fuente = ajustes.value("frontal/ads_leyenda/fuente")
-    tamanio_num_leyenda = ajustes.value("frontal/ads_leyenda/tam")
-    color_leyenda = ajustes.value("frontal/ads_leyenda/color")
-    x_num_leyenda = int(ajustes.value("frontal/ads_leyenda/x"))
-    y_num_leyenda = int(ajustes.value("frontal/ads_leyenda/y"))
-    w_num_leyenda = int(ajustes.value("frontal/ads_leyenda/w"))
-    h_num_leyenda = int(ajustes.value("frontal/ads_leyenda/h"))
-
-    bold_leyenda = ajustes.value("frontal/ads_leyenda/negrita")
-    if not isinstance(bold_leyenda, bool):
-        bold_leyenda = str(bold_leyenda).lower() == "true"
-    pintar_texto(p,texto_adscripcion,leyenda_fuente,color_leyenda,tamanio_num_leyenda,(x_num_leyenda,y_num_leyenda,w_num_leyenda,h_num_leyenda),bold_leyenda)
+        bold_leyenda = ajustes.value("frontal/num_leyenda/negrita")
+        if not isinstance(bold_leyenda, bool):
+            bold_leyenda = str(bold_leyenda).lower() == "true"
+        pintar_texto(p,texto,leyenda_fuente,color_leyenda,tamanio_num_leyenda,(x_num_leyenda,y_num_leyenda,w_num_leyenda,h_num_leyenda),bold_leyenda)
 
 
-    #Pintamos Area
+        #Pintamos el numero_usuario
 
-    numero_usuario = data["area"]
-    nombre_fuente = ajustes.value("frontal/ads_valor/fuente")
-    tamanio_nombre = int(ajustes.value("frontal/ads_valor/tam"))
-    color_nombre = ajustes.value("frontal/ads_valor/color")
-    x_nombre = int(ajustes.value("frontal/ads_valor/x"))
-    y_nombre = int(ajustes.value("frontal/ads_valor/y"))
-    w_nombre = int(ajustes.value("frontal/ads_valor/w"))
-    h_nombre = int(ajustes.value("frontal/ads_valor/h"))
-    bold_nombre = ajustes.value("frontal/ads_valor/negrita")
-    if not isinstance(bold_nombre, bool):
-        bold_nombre = str(bold_nombre).lower() == "true"
-    pintar_texto(p, numero_usuario, nombre_fuente, color_nombre, tamanio_nombre, (x_nombre,y_nombre,w_nombre,h_nombre), bold_nombre)
+        numero_usuario = data["numero_usuario"]
+        nombre_fuente = ajustes.value("frontal/num_valor/fuente")
+        tamanio_nombre = int(ajustes.value("frontal/num_valor/tam"))
+        color_nombre = ajustes.value("frontal/num_valor/color")
+        x_nombre = int(ajustes.value("frontal/num_valor/x"))
+        y_nombre = int(ajustes.value("frontal/num_valor/y"))
+        w_nombre = int(ajustes.value("frontal/num_valor/w"))
+        h_nombre = int(ajustes.value("frontal/num_valor/h"))
+        bold_nombre = ajustes.value("frontal/num_valor/negrita")
+        if not isinstance(bold_nombre, bool):
+            bold_nombre = str(bold_nombre).lower() == "true"
+        pintar_texto(p, numero_usuario, nombre_fuente, color_nombre, tamanio_nombre, (x_nombre,y_nombre,w_nombre,h_nombre), bold_nombre)
 
-    nombre_imagen = distintivos["archivo"]
-    if nombre_imagen is None or nombre_imagen == "":
-        statusBar.mostrar_error("No se pudo obtenete el nombre del distintivo del usuario")
-        return None
+        # Puntamos la leyenda de adcripcion
+        texto_adscripcion = distintivos["adscripcion"]
+        leyenda_fuente = ajustes.value("frontal/ads_leyenda/fuente")
+        tamanio_num_leyenda = ajustes.value("frontal/ads_leyenda/tam")
+        color_leyenda = ajustes.value("frontal/ads_leyenda/color")
+        x_num_leyenda = int(ajustes.value("frontal/ads_leyenda/x"))
+        y_num_leyenda = int(ajustes.value("frontal/ads_leyenda/y"))
+        w_num_leyenda = int(ajustes.value("frontal/ads_leyenda/w"))
+        h_num_leyenda = int(ajustes.value("frontal/ads_leyenda/h"))
 
-    imagen_nombre_distintivo = Path(join(carpeta,nombre_imagen))
-    if not imagen_nombre_distintivo.exists() or not imagen_nombre_distintivo.is_file():
-        statusBar.mostrar_error("El nombre del distintivo no existe o no es un archivo.")
-
-    imagen_distintivo = QImage(imagen_nombre_distintivo)
-    x_distintivo = int(ajustes.value("distintivos/mascara/x"))
-    y_distintivo = int(ajustes.value("distintivos/mascara/y"))
-    w_distintivo = int(ajustes.value("distintivos/mascara/w"))
-    h_distintivo = int(ajustes.value("distintivos/mascara/h"))
-
-    p.drawImage(QPoint(x_distintivo,  y_distintivo), imagen_distintivo)
+        bold_leyenda = ajustes.value("frontal/ads_leyenda/negrita")
+        if not isinstance(bold_leyenda, bool):
+            bold_leyenda = str(bold_leyenda).lower() == "true"
+        pintar_texto(p,texto_adscripcion,leyenda_fuente,color_leyenda,tamanio_num_leyenda,(x_num_leyenda,y_num_leyenda,w_num_leyenda,h_num_leyenda),bold_leyenda)
 
 
+        #Pintamos Area
 
-    p.end()
-    statusBar.mostrar_exito("Frontal generado")
-    return imagen
+        numero_usuario = data["area"]
+        nombre_fuente = ajustes.value("frontal/ads_valor/fuente")
+        tamanio_nombre = int(ajustes.value("frontal/ads_valor/tam"))
+        color_nombre = ajustes.value("frontal/ads_valor/color")
+        x_nombre = int(ajustes.value("frontal/ads_valor/x"))
+        y_nombre = int(ajustes.value("frontal/ads_valor/y"))
+        w_nombre = int(ajustes.value("frontal/ads_valor/w"))
+        h_nombre = int(ajustes.value("frontal/ads_valor/h"))
+        bold_nombre = ajustes.value("frontal/ads_valor/negrita")
+        if not isinstance(bold_nombre, bool):
+            bold_nombre = str(bold_nombre).lower() == "true"
+        pintar_texto(p, numero_usuario, nombre_fuente, color_nombre, tamanio_nombre, (x_nombre,y_nombre,w_nombre,h_nombre), bold_nombre)
+
+        nombre_imagen = distintivos["archivo"]
+        if nombre_imagen is None or nombre_imagen == "":
+            statusBar.mostrar_error("No se pudo obtenete el nombre del distintivo del usuario")
+            return None
+
+        imagen_nombre_distintivo = Path(join(carpeta,nombre_imagen))
+        if not imagen_nombre_distintivo.exists() or not imagen_nombre_distintivo.is_file():
+            statusBar.mostrar_error("El nombre del distintivo no existe o no es un archivo.")
+
+        imagen_distintivo = QImage(imagen_nombre_distintivo)
+        x_distintivo = int(ajustes.value("distintivos/mascara/x"))
+        y_distintivo = int(ajustes.value("distintivos/mascara/y"))
+        w_distintivo = int(ajustes.value("distintivos/mascara/w"))
+        h_distintivo = int(ajustes.value("distintivos/mascara/h"))
+
+        p.drawImage(QPoint(x_distintivo,  y_distintivo), imagen_distintivo)
+
+
+
+        
+        statusBar.mostrar_exito("Frontal generado")
+        return imagen
+    finally:
+        if isinstance(p,QPainter):
+            p.end()
 
 
 async def renderizar_posterior(data:dict)->QImage:
@@ -196,119 +200,127 @@ async def renderizar_posterior(data:dict)->QImage:
         statusBar.mostrar_error("No se encontro la plantilla frontal")
 
     # Creando painter para cargar imagen
-    p = QPainter(imagen)
-    p.setRenderHints(QPainter.Antialiasing | QPainter.SmoothPixmapTransform | QPainter.TextAntialiasing)
+    try:
+        p = QPainter(imagen)
+        p.setRenderHints(QPainter.Antialiasing | QPainter.SmoothPixmapTransform | QPainter.TextAntialiasing)
 
-    # Pintando plantilla frontal
-    p.drawImage(imagen.rect(), QImage(ruta_reverso))
-
-
-    # Pintar distintivo
-    tipo = data["tipo_usuario"]
-    distintivos = buscar_categoria(ajustes, tipo)
-    nombre_imagen = distintivos["archivo"]
-    if nombre_imagen is None or nombre_imagen == "":
-        statusBar.mostrar_error("No se pudo obtenete el nombre del distintivo del usuario")
-        return None
-
-    imagen_nombre_distintivo = Path(join(carpeta,nombre_imagen))
-    if not imagen_nombre_distintivo.exists() or not imagen_nombre_distintivo.is_file():
-        statusBar.mostrar_error("El nombre del distintivo no existe o no es un archivo.")
-
-    imagen_distintivo = QImage(imagen_nombre_distintivo)
-    x_distintivo = int(ajustes.value("distintivos/mascara/x"))
-    y_distintivo = int(ajustes.value("distintivos/mascara/y"))
-    w_distintivo = int(ajustes.value("distintivos/mascara/w"))
-    h_distintivo = int(ajustes.value("distintivos/mascara/h"))
-
-    p.drawImage(QPoint(x_distintivo,  y_distintivo), imagen_distintivo)
-
-    # Pintar titulo
-    titulo = ajustes.value("trasera/titulo/texto")
-    fuente_titulo = ajustes.value("trasera/titulo/fuente")
-    color_titulo = ajustes.value("trasera/titulo/color")
-    tam_titulo = int(ajustes.value("trasera/titulo/tam"))
-    x_titulo = int(ajustes.value("trasera/titulo/x"))
-    y_titulo = int(ajustes.value("trasera/titulo/y"))
-    w_titulo = int(ajustes.value("trasera/titulo/w"))
-    h_titulo = int(ajustes.value("trasera/titulo/h"))
-    bold_titulo = ajustes.value("trasera/titulo/negrita")
-    if not isinstance(bold_titulo, bool):
-            bold_titulo = str(bold_titulo).lower() == "true"
-    alineacion_titulo = ajustes.value("trasera/titulo/alineacion")
-    
-    pintar_texto(p, titulo,fuente_titulo,color_titulo,tam_titulo,(x_titulo,y_titulo,w_titulo,h_titulo),bold_titulo, alineacion=alineacion_titulo)
+        # Pintando plantilla frontal
+        p.drawImage(imagen.rect(), QImage(ruta_reverso))
 
 
-    # Pintar aviso
-    cuerpo = ajustes.value("trasera/cuerpo/texto")
-    fuente_cuerpo = ajustes.value("trasera/cuerpo/fuente")
-    color_cuerpo = ajustes.value("trasera/cuerpo/color")
-    tam_cuerpo = int(ajustes.value("trasera/cuerpo/tam"))
-    x_cuerpo = int(ajustes.value("trasera/cuerpo/x"))
-    y_cuerpo = int(ajustes.value("trasera/cuerpo/y"))
-    w_cuerpo = int(ajustes.value("trasera/cuerpo/w"))
-    h_cuerpo = int(ajustes.value("trasera/cuerpo/h"))
-    bold_cuerpo = ajustes.value("trasera/cuerpo/negrita")
-    if not isinstance(bold_cuerpo, bool):
-                bold_cuerpo = str(bold_cuerpo).lower() == "true"
-    alineacion_cuerpo = ajustes.value("trasera/cuerpo/alineacion")
-    pintar_texto(p, cuerpo,fuente_cuerpo,color_cuerpo,tam_cuerpo,(x_cuerpo,y_cuerpo,w_cuerpo,h_cuerpo),bold_cuerpo, alineacion=alineacion_cuerpo)
-    
+        # Pintar distintivo
+        tipo = data["tipo_usuario"]
+        distintivos = buscar_categoria(ajustes, tipo)
+        nombre_imagen = distintivos["archivo"]
+        if nombre_imagen is None or nombre_imagen == "":
+            statusBar.mostrar_error("No se pudo obtenete el nombre del distintivo del usuario")
+            return None
 
-    # Pintar firma del dicrector. 
-    nombre_firma = ajustes.value("trasera/firma/archivo")
-    archivo_firma = Path(join(carpeta,nombre_firma))
+        imagen_nombre_distintivo = Path(join(carpeta,nombre_imagen))
+        if not imagen_nombre_distintivo.exists() or not imagen_nombre_distintivo.is_file():
+            statusBar.mostrar_error("El nombre del distintivo no existe o no es un archivo.")
 
-    if not archivo_firma.exists() or not archivo_firma.is_file():
-        statusBar.mostrar_error("No se encontro la firma del director")
-        return None
+        imagen_distintivo = QImage(imagen_nombre_distintivo)
+        x_distintivo = int(ajustes.value("distintivos/mascara/x"))
+        y_distintivo = int(ajustes.value("distintivos/mascara/y"))
+        w_distintivo = int(ajustes.value("distintivos/mascara/w"))
+        h_distintivo = int(ajustes.value("distintivos/mascara/h"))
 
-    x_firma = int(ajustes.value("trasera/firma/x"))
-    y_firma = int(ajustes.value("trasera/firma/y"))
-    w_firma = int(ajustes.value("trasera/firma/w"))
-    h_firma = int(ajustes.value("trasera/firma/h"))
+        p.drawImage(QPoint(x_distintivo,  y_distintivo), imagen_distintivo)
 
-    caja_firma = QRectF(x_firma, y_firma,w_firma, h_firma)
-    firma_img = QImage(archivo_firma)
-    if firma_img.isNull():
-        statusBar.mostrar_error("No se pudo cargar la firma del director")
-        return None
-    # Escalar la firma al tamano de la caja conservando el aspect ratio
-    firma_img = firma_img.scaled(
-        caja_firma.size().toSize(),
-        Qt.KeepAspectRatio,
-        Qt.SmoothTransformation
-    )
-    p.drawImage(caja_firma.topLeft(), firma_img)
+        # Pintar titulo
+        titulo = ajustes.value("trasera/titulo/texto")
+        fuente_titulo = ajustes.value("trasera/titulo/fuente")
+        color_titulo = ajustes.value("trasera/titulo/color")
+        tam_titulo = int(ajustes.value("trasera/titulo/tam"))
+        x_titulo = int(ajustes.value("trasera/titulo/x"))
+        y_titulo = int(ajustes.value("trasera/titulo/y"))
+        w_titulo = int(ajustes.value("trasera/titulo/w"))
+        h_titulo = int(ajustes.value("trasera/titulo/h"))
+        bold_titulo = ajustes.value("trasera/titulo/negrita")
+        if not isinstance(bold_titulo, bool):
+                bold_titulo = str(bold_titulo).lower() == "true"
+        alineacion_titulo = ajustes.value("trasera/titulo/alineacion")
+        
+        pintar_texto(p, titulo,fuente_titulo,color_titulo,tam_titulo,(x_titulo,y_titulo,w_titulo,h_titulo),bold_titulo, alineacion=alineacion_titulo)
 
-    # Pintar aviso
-    director = ajustes.value("trasera/director/texto")
-    fuente_director = ajustes.value("trasera/director/fuente")
-    color_director = ajustes.value("trasera/director/color")
-    tam_director = int(ajustes.value("trasera/director/tam"))
-    x_director = int(ajustes.value("trasera/director/x"))
-    y_director = int(ajustes.value("trasera/director/y"))
-    w_director = int(ajustes.value("trasera/director/w"))
-    h_director = int(ajustes.value("trasera/director/h"))
-    bold_director = ajustes.value("trasera/director/negrita")
-    if not isinstance(bold_director, bool):
-                bold_director = str(bold_director).lower() == "true"
-    alineacion_director = ajustes.value("trasera/director/alineacion")
-    pintar_texto(p, director,fuente_director,color_director,tam_director,(x_director,y_director,w_director,h_director),bold_director, alineacion=alineacion_director)
 
-    # Pintamos QR
-    texto_qr = "https://siencb.ipn.mx/verificar_usuario?numero_usuario=2022319007"
-    x_qr = int(ajustes.value("trasera/qr/x"))
-    y_qr = int(ajustes.value("trasera/qr/y"))
-    w_qr = int(ajustes.value("trasera/qr/w"))
-    h_qr = int(ajustes.value("trasera/qr/h"))
+        # Pintar aviso
+        cuerpo = ajustes.value("trasera/cuerpo/texto")
+        fuente_cuerpo = ajustes.value("trasera/cuerpo/fuente")
+        color_cuerpo = ajustes.value("trasera/cuerpo/color")
+        tam_cuerpo = int(ajustes.value("trasera/cuerpo/tam"))
+        x_cuerpo = int(ajustes.value("trasera/cuerpo/x"))
+        y_cuerpo = int(ajustes.value("trasera/cuerpo/y"))
+        w_cuerpo = int(ajustes.value("trasera/cuerpo/w"))
+        h_cuerpo = int(ajustes.value("trasera/cuerpo/h"))
+        bold_cuerpo = ajustes.value("trasera/cuerpo/negrita")
+        if not isinstance(bold_cuerpo, bool):
+                    bold_cuerpo = str(bold_cuerpo).lower() == "true"
+        alineacion_cuerpo = ajustes.value("trasera/cuerpo/alineacion")
+        pintar_texto(p, cuerpo,fuente_cuerpo,color_cuerpo,tam_cuerpo,(x_cuerpo,y_cuerpo,w_cuerpo,h_cuerpo),bold_cuerpo, alineacion=alineacion_cuerpo)
+        
 
-    caja_qr = QRectF(x_qr,y_qr,w_qr,h_qr)
-    dibujar_qr(p,texto_qr,caja_qr)
-    p.end()
-    statusBar.mostrar_exito("Frontal generado")
-    return imagen
+        # Pintar firma del dicrector. 
+        nombre_firma = ajustes.value("trasera/firma/archivo")
+        archivo_firma = Path(join(carpeta,nombre_firma))
+
+        if not archivo_firma.exists() or not archivo_firma.is_file():
+            statusBar.mostrar_error("No se encontro la firma del director")
+            return None
+
+        x_firma = int(ajustes.value("trasera/firma/x"))
+        y_firma = int(ajustes.value("trasera/firma/y"))
+        w_firma = int(ajustes.value("trasera/firma/w"))
+        h_firma = int(ajustes.value("trasera/firma/h"))
+
+        caja_firma = QRectF(x_firma, y_firma,w_firma, h_firma)
+        firma_img = QImage(archivo_firma)
+        if firma_img.isNull():
+            statusBar.mostrar_error("No se pudo cargar la firma del director")
+            return None
+        # Escalar la firma al tamano de la caja conservando el aspect ratio
+        firma_img = firma_img.scaled(
+            caja_firma.size().toSize(),
+            Qt.KeepAspectRatio,
+            Qt.SmoothTransformation
+        )
+        p.drawImage(caja_firma.topLeft(), firma_img)
+
+        # Pintar aviso
+        director = ajustes.value("trasera/director/texto")
+        fuente_director = ajustes.value("trasera/director/fuente")
+        color_director = ajustes.value("trasera/director/color")
+        tam_director = int(ajustes.value("trasera/director/tam"))
+        x_director = int(ajustes.value("trasera/director/x"))
+        y_director = int(ajustes.value("trasera/director/y"))
+        w_director = int(ajustes.value("trasera/director/w"))
+        h_director = int(ajustes.value("trasera/director/h"))
+        bold_director = ajustes.value("trasera/director/negrita")
+        if not isinstance(bold_director, bool):
+                    bold_director = str(bold_director).lower() == "true"
+        alineacion_director = ajustes.value("trasera/director/alineacion")
+        pintar_texto(p, director,fuente_director,color_director,tam_director,(x_director,y_director,w_director,h_director),bold_director, alineacion=alineacion_director)
+
+        # Pintamos QR
+        num_usuario = data.get("numero_usuario",None)
+        if num_usuario is None:
+            statusBar.mostrar_error("No se encontro el numero de usuario para generar el QR")
+            return None
+        texto_qr = f"https://siencb.ipn.mx/verificar_usuario?numero_usuario={num_usuario}"
+        x_qr = int(ajustes.value("trasera/qr/x"))
+        y_qr = int(ajustes.value("trasera/qr/y"))
+        w_qr = int(ajustes.value("trasera/qr/w"))
+        h_qr = int(ajustes.value("trasera/qr/h"))
+
+        caja_qr = QRectF(x_qr,y_qr,w_qr,h_qr)
+        dibujar_qr(p,texto_qr,caja_qr)
+        p.end()
+        statusBar.mostrar_exito("Frontal generado")
+        return imagen
+    finally:
+        if isinstance(p, QPainter):
+            p.end()
 
 
 def pintar_texto(
