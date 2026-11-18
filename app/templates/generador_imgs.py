@@ -308,7 +308,7 @@ async def renderizar_posterior(data:dict)->QImage:
         if num_usuario is None:
             statusBar.mostrar_error("No se encontro el numero de usuario para generar el QR")
             return None
-        texto_qr = f"https://siencb.ipn.mx/verificar_usuario?numero_usuario={num_usuario}"
+        texto_qr = f"USUARIO={num_usuario} | https://siencb.ipn.mx/verificar_usuario?numero_usuario={num_usuario}"
         x_qr = int(ajustes.value("trasera/qr/x"))
         y_qr = int(ajustes.value("trasera/qr/y"))
         w_qr = int(ajustes.value("trasera/qr/w"))
