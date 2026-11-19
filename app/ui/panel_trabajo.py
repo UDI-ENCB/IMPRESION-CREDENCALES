@@ -381,6 +381,19 @@ class WorkPanel(QWidget):
 
 
     
+    def _tamano_pagina_configurado(self) -> QPageSize:
+        """Devuelve el perfil de tamaño guardado en la configuracion.
+
+        Si la clave guardada no existe en la lista del driver actual se usa el
+        tamaño CR80 personalizado, que es el que corresponde a la credencial.
+        """
+        clave = self.estado.tamano_pagina
+        if clave is not None:
+            for tamano in AppState.tamanos_disponibles(self.estado.impresora):
+                if tamano.key() == clave:
+                    return tamano
+        return QPageSize(QSizeF(ancho_mm, alto_mm), QPageSize.Millimeter, "Credit Card")
+
     async def generar_pdf_credencial(self, index_registro: int) -> Path | None:
         data_usuario = self.estado.datos[index_registro]
         if data_usuario is None or data_usuario.get("encontrado",False) == False or data_usuario.get("fotografia", False) == False:
@@ -393,7 +406,7 @@ class WorkPanel(QWidget):
 
         writer = QPdfWriter(str(ruta_pdf))
         writer.setResolution(800)
-        writer.setPageLayout(QPageLayout(QPageSize(QSizeF(ancho_mm, alto_mm),QPageSize.Millimeter,"Credit Card"),
+        writer.setPageLayout(QPageLayout(self._tamano_pagina_configurado(),
                                         QPageLayout.Portrait, QMarginsF(0,0,0,0)))
         writer.setTitle(f"Credencial {numero_usuario}")
 
@@ -453,10 +466,11 @@ class WorkPanel(QWidget):
         printer = QPrinter(info, QPrinter.HighResolution)
         printer.setResolution(300)
         printer.setFullPage(True)
-        response = printer.setPageLayout(QPageLayout(QPageSize(QSizeF(ancho_mm, alto_mm),QPageSize.Millimeter,"Credit Card"),
+        tamano = self._tamano_pagina_configurado()
+        response = printer.setPageLayout(QPageLayout(tamano,
                                         QPageLayout.Portrait, QMarginsF(0,0,0,0)))
         if not response:
-            self.statusBar.mostrar_aviso(f"La impresora no acepto el tamano Credit Card, se uso {printer.pageLayout().pageSize().name()}")
+            self.statusBar.mostrar_aviso(f"La impresora no acepto {tamano.name()}, se uso {printer.pageLayout().pageSize().name()}")
         printer.setColorMode(QPrinter.Color)
 
         doblecara = True

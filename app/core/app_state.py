@@ -1,4 +1,5 @@
 from PySide6.QtCore import QObject, QSettings, Signal, qInstallMessageHandler, QtMsgType
+from PySide6.QtGui import QPageSize
 from PySide6.QtPrintSupport import QPrinterInfo
 import logging
 import sys
@@ -53,6 +54,7 @@ class AppState(QObject):
         self.archivo: str | None = self.settings.value("archivo",None, str)
         self.directorio: str | None = self.settings.value("directorio",None, str)
         self.impresora: str | None = self.settings.value("impresora",None, str)
+        self.tamano_pagina: str | None = self.settings.value("tamano_pagina",None, str)
         self.datos: list[dict] = []
 
 
@@ -100,6 +102,35 @@ class AppState(QObject):
             self.set_impresora(disponibles[0])
 
         return self.impresora
+
+    def set_tamano_pagina(self, tamano:str|None):
+        if isinstance(tamano, str) and tamano.strip() == "":
+            return
+        if isinstance(tamano, str) or tamano is None:
+            self.tamano_pagina = tamano
+            self.settings.setValue("tamano_pagina", self.tamano_pagina)
+
+    @staticmethod
+    def tamanos_disponibles(impresora:str|None) -> list[QPageSize]:
+        if impresora is None or impresora.strip() == "":
+            return []
+        info = QPrinterInfo.printerInfo(impresora)
+        if info.isNull():
+            return []
+        return info.supportedPageSizes()
+
+    def verificar_tamano_pagina(self) -> str | None:
+        tamanos = self.tamanos_disponibles(self.impresora)
+
+        if len(tamanos) == 0:
+            self.set_tamano_pagina(None)
+            return None
+
+        claves = [tamano.key() for tamano in tamanos]
+        if self.tamano_pagina not in claves:
+            self.set_tamano_pagina(claves[0])
+
+        return self.tamano_pagina
 
     def add_data(self,data:dict):
         self.datos.append(data)
