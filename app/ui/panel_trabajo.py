@@ -406,7 +406,7 @@ class WorkPanel(QWidget):
 
         writer = QPdfWriter(str(ruta_pdf))
         writer.setResolution(800)
-        writer.setPageLayout(QPageLayout(self._tamano_pagina_configurado(),
+        writer.setPageLayout(QPageLayout(QPageSize(QSizeF(ancho_mm, alto_mm), QPageSize.Millimeter, "Credit Card"),
                                         QPageLayout.Portrait, QMarginsF(0,0,0,0)))
         writer.setTitle(f"Credencial {numero_usuario}")
 
@@ -502,11 +502,11 @@ class WorkPanel(QWidget):
             self.statusBar.mostrar_error("La impresora rechazo el trabajo")
             return False
 
-        # Espera a que el trabajo salga de la cola, con timeout y cancelacion.
+        # Espera a que el trabajo salga de la cola. La impresora lo mantiene
+        # listado mientras imprime, asi que el fin es su salida de la cola.
         resultado = await esperar_trabajo(
             impresora,
             ids_previos,
-            timeout_s=8.0,
             cancelar=lambda: self._cancelar_impresion,
         )
         if not resultado.ok:

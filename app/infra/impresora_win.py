@@ -260,14 +260,24 @@ def ids_en_cola(nombre: str) -> set[int]:
 async def esperar_trabajo(
     nombre: str,
     ids_previos: set[int],
-    timeout_s: float = 8.0,
+    timeout_s: float = 180.0,
     intervalo_s: float = 0.25,
     gracia_s: float = 1.5,
+    sin_progreso_s: float = 120.0,
     cancelar: Callable[[], bool] | None = None,
 ) -> Resultado:
-    """Espera a que el trabajo enviado salga de la cola o reporte error."""
+    """Espera a que el trabajo enviado salga de la cola o reporte error.
+
+    La impresora mantiene el trabajo en la cola, con estado "imprimiendo",
+    mientras dura la impresion, y lo retira al terminar: esa salida es el fin
+    real. Por eso ``timeout_s`` es solo un tope de seguridad y el fallo por
+    trabajo atascado lo detecta ``sin_progreso_s``, que vigila los cambios de
+    estado y el avance de paginas impresas.
+    """
     inicio = time.monotonic()
+    ultimo_progreso = inicio
     job_id: int | None = None
+    firma_previa: tuple[int, int] | None = None
 
     while True:
         if cancelar is not None and cancelar():
@@ -290,13 +300,23 @@ async def esperar_trabajo(
                 )
             if trabajo["status"] & sum(ESTADOS_TRABAJO_FIN):
                 return Resultado(True, False, "")
+            firma = (trabajo["status"], trabajo["paginas"])
+            if firma != firma_previa:
+                firma_previa = firma
+                ultimo_progreso = time.monotonic()
         elif job_id is not None:
             return Resultado(True, False, "")
         elif time.monotonic() - inicio >= gracia_s:
             return Resultado(True, False, "")
 
-        transcurrido = time.monotonic() - inicio
-        if transcurrido >= timeout_s:
+        ahora = time.monotonic()
+        if ahora - ultimo_progreso >= sin_progreso_s:
+            return Resultado(
+                False,
+                False,
+                f"El trabajo {job_id} no avanzo en {sin_progreso_s:g}s",
+            )
+        if ahora - inicio >= timeout_s:
             if job_id is None:
                 return Resultado(
                     False,

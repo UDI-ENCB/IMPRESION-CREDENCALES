@@ -67,7 +67,6 @@ class PrinterPanel(QWidget):
     def refrescar_tamanos(self):
         tamanos = self.estado.tamanos_disponibles(self.estado.impresora)
         seleccionado = self.estado.verificar_tamano_pagina()
-
         self.combo_tamanos.blockSignals(True)
         self.combo_tamanos.clear()
         for tamano in tamanos:
