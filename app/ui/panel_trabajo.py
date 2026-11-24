@@ -1,10 +1,11 @@
-from PySide6.QtWidgets import QStackedLayout, QSplitter, QTableView, QGroupBox, QLineEdit, QPushButton, QHBoxLayout, QVBoxLayout, QHeaderView, QTextEdit, QWidget, QLabel
+from PySide6.QtWidgets import QStackedLayout, QSplitter, QTableView, QGroupBox, QLineEdit, QPushButton, QHBoxLayout, QVBoxLayout, QHeaderView, QTextEdit, QWidget, QLabel, QFileDialog
 from PySide6.QtGui import Qt, QPixmap, QImage,QPageLayout, QPageSize, QPainter, QPdfWriter
 from PySide6.QtCore import QAbstractTableModel, QModelIndex, QSizeF, QMarginsF
 from PySide6.QtPrintSupport import QPrinter, QPrinterInfo
 from PySide6.QtPdf import QPdfDocument
 from qasync import asyncSlot
 from core.table_model import TableModel
+from ui.acciones_delegate import AccionesDelegate
 from core.app_state import AppState
 from ui.config_card.ajustes import obtener_ajustes
 from ui.global_status_bar import GlobalState
@@ -12,7 +13,9 @@ from infra.api import subir_foto, registrar_impresion
 from templates.generador_imgs import renderizar_frente, renderizar_posterior, dibujar_frente, dibujar_reverso
 from os.path import join
 from pathlib import Path
+from datetime import datetime
 from services.load_data import LoaderInfo
+from services.exportar_impresos import exportar_impresos, registros_impresos
 import asyncio
 from infra.impresora_win import estado_impresora, ids_en_cola, esperar_trabajo
 
@@ -51,6 +54,11 @@ class WorkPanel(QWidget):
         self.tabla.setSelectionBehavior(QTableView.SelectRows)
         self.tabla.setSelectionMode(QTableView.SingleSelection)
         self.tabla.clicked.connect(self.on_clikc_row)
+
+        self.delegado_acciones = AccionesDelegate(self.tabla)
+        self.delegado_acciones.eliminar_solicitado.connect(self.on_click_eliminar_registro)
+        self.delegado_acciones.accion_secundaria_solicitada.connect(
+            self.on_click_actualizar_impresion)
         
         #self.tabla.setHorizontalHeaderLabels(["Seleccion","Nombre", "Foto", "Fecha Impreion", "Acciones"])
         #self.tabla.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
@@ -113,6 +121,8 @@ class WorkPanel(QWidget):
         self.subir_img_todas.clicked.connect(self.on_click_subir_todas_imgs)
         self.imp_credenciales_select = QPushButton("Imprimir credenciales seleccionadas")
         self.imp_credenciales_select.clicked.connect(self.on_clicl_imprimir_select)
+        self.button_exportar_impresos = QPushButton("Exportar impresos")
+        self.button_exportar_impresos.clicked.connect(self.on_click_exportar_impresos)
         self.cancelar_impresiones = QPushButton("Cancelar")
         self.cancelar_impresiones.clicked.connect(self.on_click_cancelar_impresion)
         self.cancelar_impresiones.setEnabled(False)
@@ -122,6 +132,7 @@ class WorkPanel(QWidget):
         botones_acciones_layout.addWidget(self.subir_img_select)
         botones_acciones_layout.addWidget(self.subir_img_todas)
         botones_acciones_layout.addWidget(self.imp_credenciales_select)
+        botones_acciones_layout.addWidget(self.button_exportar_impresos)
         botones_acciones_layout.addWidget(self.cancelar_impresiones)
 
         #Configuramos spliter
@@ -141,7 +152,55 @@ class WorkPanel(QWidget):
     def set_table_model(self):
         self.tabla_modelo = TableModel()
         self.tabla.setModel(self.tabla_modelo)
+        self.tabla.setItemDelegateForColumn(
+            self.tabla_modelo.columnCount() - 1, self.delegado_acciones)
         #self.tabla.selectionModel().currentRowChanged.connect(self.on_select_row)
+
+    def on_click_eliminar_registro(self, fila: int):
+        if self.tabla_modelo is None or not 0 <= fila < len(self.estado.datos):
+            return
+        numero_usuario = self.estado.datos[fila].get("numero_usuario", "")
+        if not self.tabla_modelo.remove_row(fila):
+            return
+        if self.tabla_modelo.rowCount() == 0:
+            self.stackt_preview.setCurrentIndex(0)
+        self.statusBar.mostrar_exito(f"Registro {numero_usuario} eliminado")
+
+    @asyncSlot(int)
+    async def on_click_actualizar_impresion(self, fila: int):
+        if self.tabla_modelo is None or not 0 <= fila < len(self.estado.datos):
+            return
+        registro = self.estado.datos[fila]
+        if not registro.get("encontrado", False):
+            self.statusBar.mostrar_aviso("El registro no existe, no se puede actualizar")
+            return
+        if await self.actualizar_registro_impreso(fila, registro):
+            self.statusBar.mostrar_exito(
+                f"Fecha de impresion actualizada para {registro.get('numero_usuario','')}")
+
+    @asyncSlot()
+    async def on_click_exportar_impresos(self):
+        impresos = registros_impresos(self.estado.datos)
+        if not impresos:
+            self.statusBar.mostrar_aviso("No hay registros con fecha de impresion")
+            return
+
+        carpeta = self.estado.directorio or str(Path.home())
+        nombre = f"impresos_{datetime.now():%Y%m%d_%H%M}.xlsx"
+        ruta, _ = QFileDialog.getSaveFileName(
+            self, "Exportar impresos", str(Path(carpeta) / nombre), "Excel (*.xlsx)")
+        if not ruta:
+            return
+        if not ruta.lower().endswith(".xlsx"):
+            ruta = f"{ruta}.xlsx"
+
+        try:
+            total = await asyncio.to_thread(exportar_impresos, self.estado.datos, ruta)
+        except Exception as exc:
+            self.statusBar.mostrar_error(f"No se pudo exportar: {exc}")
+            return
+
+        self.statusBar.mostrar_exito(f"{total} registro(s) exportados en {ruta}")
 
     def on_header_clicked(self,section):
         if section == 0:
@@ -192,6 +251,11 @@ class WorkPanel(QWidget):
 
     @asyncSlot()
     async def on_clikc_row(self, index: QModelIndex):
+        if self.tabla_modelo is None:
+            return
+        if index.column() == self.tabla_modelo.columnCount() - 1:
+            # La columna de acciones la maneja su delegado.
+            return
         fila = index.row()
         numero_usuario = index.siblingAtColumn(0).data()  # valor de la columna 0 de esa fila
 
@@ -374,7 +438,7 @@ class WorkPanel(QWidget):
         if not isinstance(registro_nuevo, dict):
             return True
 
-        registro_nuevo["checked"] = registro.get("checked", False)
+        registro_nuevo["checked"] = False
         if self.tabla_modelo is not None:
             self.tabla_modelo.update_row(fila, registro_nuevo)
         return True
