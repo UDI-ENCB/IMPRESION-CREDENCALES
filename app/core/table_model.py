@@ -80,6 +80,8 @@ class TableModel(QAbstractTableModel):
         elif role == Qt.ItemDataRole.ForegroundRole:
             if data.get("encontrado",False):
                 return QColor(255,255,255,255)
+            else:
+                return QColor(0,0,0,255)
         elif role == Qt.ItemDataRole.CheckStateRole:
             if col_num == 0:
                 if data.get("checked",False):
