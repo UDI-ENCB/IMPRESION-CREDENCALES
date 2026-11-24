@@ -16,7 +16,8 @@ class TableModel(QAbstractTableModel):
                         ("Area","area"), 
                         ("Tipo Usuario","tipo_usuario"),
                         ("Fotografia","fotografia"),
-                        ("Fecha Impresion","fecha_impresion")]
+                        ("Fecha Impresion","fecha_impresion"),
+                        ("Acciones","acciones")]
 
 
     def rowCount(self, parent=QModelIndex()):
@@ -46,6 +47,10 @@ class TableModel(QAbstractTableModel):
             if col_num == 0:
                 return data.get("numero_usuario",None)
 
+            if col_num == len(self._columns) - 1:
+                # La columna de acciones la dibuja el delegado.
+                return None
+
             if not data.get("encontrado",False):
                 return None
             
@@ -72,6 +77,9 @@ class TableModel(QAbstractTableModel):
 
             if data.get("fecha_impresion",None):
                 return QColor(1,74,10)
+        elif role == Qt.ItemDataRole.ForegroundRole:
+            if data.get("encontrado",False):
+                return QColor(255,255,255,255)
         elif role == Qt.ItemDataRole.CheckStateRole:
             if col_num == 0:
                 if data.get("checked",False):
@@ -110,6 +118,14 @@ class TableModel(QAbstractTableModel):
             self.index(fila,0),
             self.index(fila,self.columnCount()-1)
         )
+        return True
+
+    def remove_row(self, fila: int) -> bool:
+        if not 0 <= fila < len(self.estado.datos):
+            return False
+        self.beginRemoveRows(QModelIndex(), fila, fila)
+        del self.estado.datos[fila]
+        self.endRemoveRows()
         return True
 
     def add_row(self, registro: dict) -> int:
