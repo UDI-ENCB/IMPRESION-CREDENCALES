@@ -1,6 +1,7 @@
 from PySide6.QtCore import QObject, QSettings, Signal, qInstallMessageHandler, QtMsgType
 from PySide6.QtGui import QPageSize
 from PySide6.QtPrintSupport import QPrinterInfo
+from services.filtros import FILTROS_DEFAULT
 import logging
 import sys
 
@@ -56,6 +57,8 @@ class AppState(QObject):
         self.impresora: str | None = self.settings.value("impresora",None, str)
         self.tamano_pagina: str | None = self.settings.value("tamano_pagina",None, str)
         self.datos: list[dict] = []
+        self.datos_todos: list[dict] = []
+        self.filtros: dict = dict(FILTROS_DEFAULT)
 
 
     def set_user(self, user:str):

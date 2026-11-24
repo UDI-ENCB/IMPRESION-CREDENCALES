@@ -78,7 +78,7 @@ class TableModel(QAbstractTableModel):
             if data.get("fecha_impresion",None):
                 return QColor(1,74,10)
         elif role == Qt.ItemDataRole.ForegroundRole:
-            if data.get("encontrado",False):
+            if data.get("fotografia",False):
                 return QColor(255,255,255,255)
             else:
                 return QColor(0,0,0,255)

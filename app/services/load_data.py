@@ -3,6 +3,7 @@ from openpyxl import load_workbook, Workbook
 from core.app_state import AppState
 from ui.global_status_bar import GlobalState
 from infra.api import buscar_usuario
+from services.filtros import filtrar
 from pathlib import Path
 import asyncio
 from os.path import join
@@ -70,6 +71,9 @@ class LoaderInfo:
                 
             self.statu_bar.stop_progress_bar()
             if not error:
+                self.estado.datos_todos = list(self.estado.datos)
+                self.estado.datos = filtrar(
+                    self.estado.datos_todos, self.estado.filtros, self.estado.directorio)
                 self.estado.logger.info(f"Operacion completada: Encontrados: {usuarios_encontrados} | No Encontrados: {usuarios_no_encontrados}")
                 self.statu_bar.mostrar_aviso(f"Operacion completada: Encontrados: {usuarios_encontrados} | No Encontrados: {usuarios_no_encontrados}")
                 self.estado.data_loaded.emit()

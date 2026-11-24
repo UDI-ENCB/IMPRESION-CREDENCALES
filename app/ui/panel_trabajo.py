@@ -16,6 +16,7 @@ from pathlib import Path
 from datetime import datetime
 from services.load_data import LoaderInfo
 from services.exportar_impresos import exportar_impresos, registros_impresos
+from services.filtros import eliminar_registro, actualizar_registro
 import asyncio
 from infra.impresora_win import estado_impresora, ids_en_cola, esperar_trabajo
 
@@ -162,6 +163,7 @@ class WorkPanel(QWidget):
         numero_usuario = self.estado.datos[fila].get("numero_usuario", "")
         if not self.tabla_modelo.remove_row(fila):
             return
+        eliminar_registro(self.estado.datos_todos, numero_usuario)
         if self.tabla_modelo.rowCount() == 0:
             self.stackt_preview.setCurrentIndex(0)
         self.statusBar.mostrar_exito(f"Registro {numero_usuario} eliminado")
@@ -324,6 +326,7 @@ class WorkPanel(QWidget):
             return
 
         self.tabla_modelo.update_row(indice,registro_usuario)
+        actualizar_registro(self.estado.datos_todos, registro_usuario)
         
 
     @asyncSlot()
@@ -439,6 +442,7 @@ class WorkPanel(QWidget):
             return True
 
         registro_nuevo["checked"] = False
+        actualizar_registro(self.estado.datos_todos, registro_nuevo)
         if self.tabla_modelo is not None:
             self.tabla_modelo.update_row(fila, registro_nuevo)
         return True
