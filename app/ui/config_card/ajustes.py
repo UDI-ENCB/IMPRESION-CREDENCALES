@@ -55,3 +55,19 @@ def leer_bool(s: QSettings, clave: str, defecto: bool) -> bool:
 def leer_str(s: QSettings, clave: str, defecto: str = "") -> str:
     v = s.value(clave, defecto)
     return defecto if v is None else str(v)
+
+
+def leer_categorias(s: QSettings) -> list[dict]:
+    """Lee las categorias configuradas en la tabla de distintivos."""
+    n = s.beginReadArray("distintivos/categorias")
+    categorias = []
+    for i in range(n):
+        s.setArrayIndex(i)
+        categorias.append({
+            "nombre": str(s.value("nombre", "")),
+            "archivo": str(s.value("archivo", "")),
+            "tipo": str(s.value("tipo", "")),
+            "adscripcion": str(s.value("adscripcion", "")),
+        })
+    s.endArray()
+    return categorias

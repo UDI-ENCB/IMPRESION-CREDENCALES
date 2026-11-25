@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QStackedLayout, QSplitter, QTableView, QGroupBox, QLineEdit, QPushButton, QHBoxLayout, QVBoxLayout, QHeaderView, QTextEdit, QWidget, QLabel, QFileDialog
+from PySide6.QtWidgets import QStackedLayout, QSplitter, QTableView, QGroupBox, QLineEdit, QPushButton, QHBoxLayout, QVBoxLayout, QHeaderView, QTextEdit, QWidget, QLabel, QFileDialog, QSizePolicy
 from PySide6.QtGui import Qt, QPixmap, QImage,QPageLayout, QPageSize, QPainter, QPdfWriter
 from PySide6.QtCore import QAbstractTableModel, QModelIndex, QSizeF, QMarginsF
 from PySide6.QtPrintSupport import QPrinter, QPrinterInfo
@@ -54,7 +54,13 @@ class WorkPanel(QWidget):
         self.tabla_modelo = None
         self.tabla.setSelectionBehavior(QTableView.SelectRows)
         self.tabla.setSelectionMode(QTableView.SingleSelection)
-        self.tabla.clicked.connect(self.on_clikc_row)
+        self.tabla.setStyleSheet("""
+            QTableView::item:selected {
+                background-color: #8A2BE2;
+                color: white;
+            }
+        """)
+        
 
         self.delegado_acciones = AccionesDelegate(self.tabla)
         self.delegado_acciones.eliminar_solicitado.connect(self.on_click_eliminar_registro)
@@ -147,6 +153,7 @@ class WorkPanel(QWidget):
         layout_principal = QVBoxLayout(self)
         layout_principal.addWidget(self.splitter)
         layout_principal.addLayout(botones_acciones_layout)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
         self.estado.data_loaded.connect(self.set_table_model)
 
@@ -155,6 +162,7 @@ class WorkPanel(QWidget):
         self.tabla.setModel(self.tabla_modelo)
         self.tabla.setItemDelegateForColumn(
             self.tabla_modelo.columnCount() - 1, self.delegado_acciones)
+        self.tabla.selectionModel().currentRowChanged.connect(self.on_clikc_row)
         #self.tabla.selectionModel().currentRowChanged.connect(self.on_select_row)
 
     def on_click_eliminar_registro(self, fila: int):

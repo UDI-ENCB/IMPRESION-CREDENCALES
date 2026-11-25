@@ -6,6 +6,7 @@ FILTROS_DEFAULT = {
     "impresion": "todos",
     "foto": "todos",
     "remplazo": "todos",
+    "tipo_usuario": "todos",
     "solo_encontrados": True,
 }
 
@@ -50,6 +51,12 @@ def cumple(registro: dict, filtros: dict, directorio: str | None) -> bool:
         if remplazo == "con" and not tiene:
             return False
         if remplazo == "sin" and tiene:
+            return False
+
+    tipo_usuario = filtros.get("tipo_usuario", "todos")
+    if tipo_usuario != "todos":
+        actual = str(registro.get("tipo_usuario") or "").strip().upper()
+        if actual != str(tipo_usuario).strip().upper():
             return False
 
     return True

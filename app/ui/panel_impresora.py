@@ -3,6 +3,7 @@ from PySide6.QtGui import QPageSize
 from qasync import asyncSlot
 from core.app_state import AppState
 from ui.global_status_bar import GlobalState
+from ui.grupo_colapsable import GrupoColapsable
 
 
 class PrinterPanel(QWidget):
@@ -35,8 +36,8 @@ class PrinterPanel(QWidget):
         layout.addLayout(layout_impresora)
         layout.addLayout(layout_tamanos)
 
-        group_box = QGroupBox("Impresora")
-        group_box.setLayout(layout)
+        group_box = GrupoColapsable("Impresora")
+        group_box.set_contenido(layout)
 
         layout_principal = QVBoxLayout(self)
         layout_principal.addWidget(group_box)

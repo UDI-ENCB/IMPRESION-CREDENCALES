@@ -1,9 +1,12 @@
-from PySide6.QtWidgets import QFileDialog, QLineEdit, QHBoxLayout, QVBoxLayout, QWidget, QPushButton, QGroupBox, QSizePolicy, QCheckBox, QRadioButton, QButtonGroup, QLabel
+from PySide6.QtWidgets import QFileDialog, QLineEdit, QHBoxLayout, QVBoxLayout, QWidget, QPushButton, QGroupBox, QSizePolicy, QCheckBox, QRadioButton, QButtonGroup, QLabel, QComboBox
 from qasync import asyncSlot
 from core.app_state import AppState
 from services.load_data import LoaderInfo
 from services.filtros import filtrar, eliminar_registro, actualizar_registro
+from ui.config_card.ajustes import leer_categorias, obtener_ajustes
+from ui.config_card.tab_distintivos import CATEGORIAS_DEFECTO
 from ui.global_status_bar import GlobalState
+from ui.grupo_colapsable import GrupoColapsable
 
 
 class InportPanel(QWidget):
@@ -68,8 +71,8 @@ class InportPanel(QWidget):
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
     def _crear_grupo_filtros(self) -> QGroupBox:
-        grupo = QGroupBox("Filtros")
-        layout = QHBoxLayout(grupo)
+        grupo = GrupoColapsable("Filtros")
+        layout = QHBoxLayout()
         columna_izquierda = QVBoxLayout()
         columna_derecha = QVBoxLayout()
 
@@ -96,12 +99,23 @@ class InportPanel(QWidget):
         self.check_encontrados.setChecked(self.estado.filtros.get("solo_encontrados", True))
         columna_derecha.addWidget(self.check_encontrados)
 
+        columna_derecha.addWidget(QLabel("Tipo de usuario"))
+        self.combo_tipo_usuario = QComboBox()
+        self.combo_tipo_usuario.addItem("Todos", "todos")
+        for nombre in self._nombres_categorias():
+            self.combo_tipo_usuario.addItem(nombre, nombre)
+        indice = self.combo_tipo_usuario.findData(
+            self.estado.filtros.get("tipo_usuario", "todos"))
+        self.combo_tipo_usuario.setCurrentIndex(max(indice, 0))
+        columna_derecha.addWidget(self.combo_tipo_usuario)
+
         self.label_resumen = QLabel("")
         columna_derecha.addWidget(self.label_resumen)
         columna_derecha.addStretch()
 
         layout.addLayout(columna_izquierda)
         layout.addLayout(columna_derecha)
+        grupo.set_contenido(layout)
 
         self._actualizar_resumen()
         self._actualizar_estado_filtros()
@@ -121,6 +135,18 @@ class InportPanel(QWidget):
         layout.addLayout(fila)
         return grupo
 
+    def _nombres_categorias(self) -> list[str]:
+        """Categorias de la tabla de distintivos, sin repetir y en orden."""
+        categorias = leer_categorias(obtener_ajustes())
+        if not categorias:
+            categorias = [{"nombre": nombre} for nombre, *_ in CATEGORIAS_DEFECTO]
+        nombres = []
+        for categoria in categorias:
+            nombre = str(categoria.get("nombre", "")).strip()
+            if nombre and nombre not in nombres:
+                nombres.append(nombre)
+        return nombres
+
     def _valor_radio(self, grupo: QButtonGroup, defecto: str) -> str:
         boton = grupo.checkedButton()
         if boton is None:
@@ -133,6 +159,7 @@ class InportPanel(QWidget):
             "impresion": self._valor_radio(self.radio_impresion, "todos"),
             "foto": self._valor_radio(self.radio_foto, "todos"),
             "remplazo": self._valor_radio(self.radio_remplazo, "todos"),
+            "tipo_usuario": self.combo_tipo_usuario.currentData() or "todos",
             "solo_encontrados": self.check_encontrados.isChecked(),
         }
 
@@ -145,6 +172,7 @@ class InportPanel(QWidget):
             for boton in grupo.buttons():
                 boton.setEnabled(activo)
         self.check_encontrados.setEnabled(activo)
+        self.combo_tipo_usuario.setEnabled(activo)
         self.button_refiltrar.setEnabled(activo)
 
     def _actualizar_resumen(self):

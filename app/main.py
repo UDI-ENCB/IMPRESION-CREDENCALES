@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QApplication, QWidget, QMainWindow, QVBoxLayout, QPushButton
+from PySide6.QtWidgets import QApplication, QWidget, QMainWindow, QVBoxLayout, QPushButton, QScrollArea
 from ui.login import Login
 from ui.panel_importacion import InportPanel
 from ui.panel_impresora import PrinterPanel
@@ -29,14 +29,18 @@ layout.addWidget(config_card_button)
 layout.addWidget(login)
 layout.addWidget(panel_importacion)
 layout.addWidget(panel_impresora)
-layout.addWidget(panel_trabajo)
+layout.addWidget(panel_trabajo, 1)
 widget = QWidget()
 widget.setLayout(layout)
+
+scroll = QScrollArea()
+scroll.setWidgetResizable(True)
+scroll.setWidget(widget)
 
 window = QMainWindow()
 window.setStatusBar(status_bar)
 window.setWindowTitle("Impresion credenciales")
-window.setCentralWidget(widget)
+window.setCentralWidget(scroll)
 
 window.show()
 
